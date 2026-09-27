@@ -231,3 +231,31 @@
     });
   });
 })();
+
+// Give Window the same warm orange-gold daytime sun language as Wind Field.
+(() => {
+  const style = document.createElement('style');
+  style.textContent = `
+    .is-day .celestial-body{
+      background:#ffd36a!important;
+      box-shadow:0 0 18px 8px rgba(245,163,59,.28),0 0 58px 22px rgba(242,139,44,.16)!important;
+    }
+    .is-morning .celestial-body{
+      background:#f7b24b!important;
+      box-shadow:0 0 20px 9px rgba(245,163,59,.30),0 0 72px 28px rgba(242,139,44,.16)!important;
+    }
+    .is-midday .celestial-body{
+      background:#ffd36a!important;
+      box-shadow:0 0 20px 10px rgba(255,211,106,.30),0 0 82px 32px rgba(245,163,59,.18)!important;
+    }
+    .is-afternoon .celestial-body{
+      background:#f5a33b!important;
+      box-shadow:0 0 22px 10px rgba(245,163,59,.34),0 0 88px 34px rgba(242,139,44,.20)!important;
+    }
+    .is-evening .celestial-body{
+      background:#f28b2c!important;
+      box-shadow:0 0 22px 10px rgba(242,139,44,.36),0 0 86px 34px rgba(255,103,44,.20)!important;
+    }
+  `;
+  document.head.appendChild(style);
+})();
