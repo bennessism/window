@@ -1,4 +1,4 @@
-const CACHE_NAME = 'window-v6';
+const CACHE_NAME = 'window-v7';
 const APP_SHELL = [
   './',
   './index.html',
