@@ -1,4 +1,4 @@
-const CACHE_NAME = 'window-v7';
+const CACHE_NAME = 'window-v8';
 const APP_SHELL = [
   './',
   './index.html',
@@ -11,6 +11,8 @@ const APP_SHELL = [
   './icon-192.png',
   './icon-512.png'
 ];
+
+const WEATHER_RAW_BASE = 'https://raw.githubusercontent.com/bennessism/window/main/';
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)));
@@ -31,13 +33,25 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  // Weather must always reflect the newest committed repository snapshot.
+  // Bypass both the PWA cache and GitHub Pages deployment lag by reading the
+  // weather JSON directly from main on raw.githubusercontent.com.
+  const weatherMarker = '/weather/';
+  const weatherIndex = url.pathname.indexOf(weatherMarker);
+  if (weatherIndex !== -1) {
+    const weatherPath = url.pathname.slice(weatherIndex + 1);
+    const rawUrl = `${WEATHER_RAW_BASE}${weatherPath}?ts=${Date.now()}`;
+    event.respondWith(
+      fetch(rawUrl, { cache: 'no-store' }).catch(() => fetch(request, { cache: 'no-store' }))
+    );
+    return;
+  }
+
   const networkFirst = request.mode === 'navigate' ||
     url.pathname.endsWith('/index.html') ||
     url.pathname.endsWith('/style.css') ||
     url.pathname.endsWith('/app.js') ||
     url.pathname.endsWith('/touch-layout.js') ||
-    url.pathname.includes('/weather/data/') ||
-    url.pathname.endsWith('/weather/catalog.json') ||
     url.pathname.endsWith('/room-links.json') ||
     url.pathname.endsWith('/room-frame.json');
 
