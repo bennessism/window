@@ -110,7 +110,6 @@
   const locationSelect = document.getElementById('locationSelect');
   if (!weatherPanel || !weatherCard || !placePanel || !countrySelect || !locationSelect) return;
 
-  // The picker becomes part of the same card, exactly like Wind Field.
   weatherCard.appendChild(placePanel);
 
   const style = document.createElement('style');
@@ -197,7 +196,6 @@
     placePanel.hidden = true;
   };
 
-  // Use Wind Field's explicit-apply pattern instead of changing weather while browsing selects.
   countrySelect.addEventListener('change', event => {
     event.stopImmediatePropagation();
     const countryCode = countrySelect.value;
@@ -215,7 +213,6 @@
     closePicker();
   });
 
-  // Capture prevents the older app.js handlers from closing the master card first.
   weatherLocationButton?.addEventListener('click', openPicker, true);
   placeButton?.addEventListener('click', openPicker, true);
   closePlace?.addEventListener('click', event => {
@@ -258,4 +255,35 @@
     }
   `;
   document.head.appendChild(style);
+})();
+
+// Keep displayed weather synchronized with the newest repository snapshot.
+(() => {
+  let lastActiveRefresh = 0;
+  let refreshInFlight = false;
+
+  const refreshLatestWeather = async force => {
+    if (document.hidden || refreshInFlight) return;
+    if (!force && Date.now() - lastActiveRefresh < 60 * 1000) return;
+    if (typeof loadWeather !== 'function') return;
+
+    const country = localStorage.getItem('window-country') || countrySelect?.value;
+    const location = localStorage.getItem('window-location') || locationSelect?.value;
+    if (!country || !location) return;
+
+    refreshInFlight = true;
+    try {
+      await loadWeather(country, location);
+      lastActiveRefresh = Date.now();
+    } finally {
+      refreshInFlight = false;
+    }
+  };
+
+  window.addEventListener('focus', () => refreshLatestWeather(true));
+  window.addEventListener('pageshow', () => refreshLatestWeather(true));
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refreshLatestWeather(true);
+  });
+  setInterval(() => refreshLatestWeather(false), 15 * 60 * 1000);
 })();
