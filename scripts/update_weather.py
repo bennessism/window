@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import json
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -24,6 +26,8 @@ CURRENT_FIELDS = [
     "wind_gusts_10m",
 ]
 
+RETRY_DELAYS = [5, 15, 30]
+
 
 def fetch_country(locations):
     params = {
@@ -35,9 +39,18 @@ def fetch_country(locations):
     }
     url = "https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, headers={"User-Agent": "bennessism-window/1.0"})
-    with urllib.request.urlopen(req, timeout=30) as response:
-        payload = json.load(response)
-    return payload if isinstance(payload, list) else [payload]
+
+    for attempt in range(len(RETRY_DELAYS) + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=45) as response:
+                payload = json.load(response)
+            return payload if isinstance(payload, list) else [payload]
+        except (urllib.error.URLError, TimeoutError) as exc:
+            if attempt >= len(RETRY_DELAYS):
+                raise
+            delay = RETRY_DELAYS[attempt]
+            print(f"Open-Meteo request failed: {exc}. Retrying in {delay}s...", flush=True)
+            time.sleep(delay)
 
 
 def clean_current(item):
