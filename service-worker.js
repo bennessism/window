@@ -1,4 +1,4 @@
-const CACHE_NAME = 'window-v8';
+const CACHE_NAME = 'window-v9';
 const APP_SHELL = [
   './',
   './index.html',
@@ -33,9 +33,6 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Weather must always reflect the newest committed repository snapshot.
-  // Bypass both the PWA cache and GitHub Pages deployment lag by reading the
-  // weather JSON directly from main on raw.githubusercontent.com.
   const weatherMarker = '/weather/';
   const weatherIndex = url.pathname.indexOf(weatherMarker);
   if (weatherIndex !== -1) {
