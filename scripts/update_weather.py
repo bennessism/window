@@ -27,6 +27,7 @@ CURRENT_FIELDS = [
 ]
 
 RETRY_DELAYS = [5, 15, 30]
+REQUEST_TIMEOUT = 35
 
 
 def fetch_country(locations):
@@ -38,11 +39,11 @@ def fetch_country(locations):
         "forecast_days": "1",
     }
     url = "https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params)
-    req = urllib.request.Request(url, headers={"User-Agent": "bennessism-window/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "bennessism-window/1.1"})
 
     for attempt in range(len(RETRY_DELAYS) + 1):
         try:
-            with urllib.request.urlopen(req, timeout=45) as response:
+            with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as response:
                 payload = json.load(response)
             return payload if isinstance(payload, list) else [payload]
         except (urllib.error.URLError, TimeoutError) as exc:
@@ -83,35 +84,53 @@ def main():
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     fetched_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    refreshed = 0
+    failed = []
 
     for code, country in catalog["countries"].items():
         locations = country["locations"]
-        results = fetch_country(locations)
-        if len(results) != len(locations):
-            raise RuntimeError(f"Open-Meteo returned {len(results)} results for {len(locations)} {country['name']} locations")
+        try:
+            results = fetch_country(locations)
+            if len(results) != len(locations):
+                raise RuntimeError(
+                    f"Open-Meteo returned {len(results)} results for {len(locations)} {country['name']} locations"
+                )
 
-        out = {
-            "country_code": code,
-            "country": country["name"],
-            "updated_at": fetched_at,
-            "source": "Open-Meteo",
-            "source_url": "https://open-meteo.com/",
-            "locations": {},
-        }
-
-        for location, result in zip(locations, results):
-            out["locations"][location["id"]] = {
-                "name": location["name"],
-                "city": location["city"],
-                "latitude": location["lat"],
-                "longitude": location["lon"],
-                **clean_current(result),
+            out = {
+                "country_code": code,
+                "country": country["name"],
+                "updated_at": fetched_at,
+                "source": "Open-Meteo",
+                "source_url": "https://open-meteo.com/",
+                "locations": {},
             }
 
-        path = DATA_DIR / f"{code}.json"
-        with path.open("w", encoding="utf-8") as handle:
-            json.dump(out, handle, ensure_ascii=False, separators=(",", ":"))
-            handle.write("\n")
+            for location, result in zip(locations, results):
+                out["locations"][location["id"]] = {
+                    "name": location["name"],
+                    "city": location["city"],
+                    "latitude": location["lat"],
+                    "longitude": location["lon"],
+                    **clean_current(result),
+                }
+
+            path = DATA_DIR / f"{code}.json"
+            with path.open("w", encoding="utf-8") as handle:
+                json.dump(out, handle, ensure_ascii=False, separators=(",", ":"))
+                handle.write("\n")
+
+            refreshed += 1
+            print(f"Refreshed {code}: {country['name']}", flush=True)
+        except Exception as exc:
+            failed.append(code)
+            print(f"WARNING: keeping previous cache for {code} ({country['name']}): {exc}", flush=True)
+
+    print(f"Weather refresh complete: {refreshed} refreshed, {len(failed)} kept from previous cache.", flush=True)
+    if failed:
+        print("Failed country codes: " + ", ".join(failed), flush=True)
+
+    if refreshed == 0:
+        raise RuntimeError("All Open-Meteo country requests failed; no cache was refreshed.")
 
 
 if __name__ == "__main__":
