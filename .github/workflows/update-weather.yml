@@ -27,7 +27,14 @@ jobs:
           python-version: "3.12"
 
       - name: Refresh cached weather
-        run: python scripts/update_weather.py
+        shell: bash
+        run: |
+          if python scripts/update_weather.py; then
+            exit 0
+          fi
+          echo "Full weather refresh failed. Waiting 60 seconds before one clean retry..."
+          sleep 60
+          python scripts/update_weather.py
 
       - name: Commit changed cache files
         run: |
