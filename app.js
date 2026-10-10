@@ -8,7 +8,7 @@ const lightning = document.getElementById('lightning');
 const lampButton = document.getElementById('lampButton');
 const lampControl = document.getElementById('lampControl');
 const clearButton = document.getElementById('clearButton');
-const placeButton = document.getElementById('placeButton');
+const musicControl = document.getElementById('musicControl');
 const placePanel = document.getElementById('placePanel');
 const closePlace = document.getElementById('closePlace');
 const countrySelect = document.getElementById('countrySelect');
@@ -405,6 +405,8 @@ async function startMusicBox() {
   musicBox.classList.add('playing');
   musicBox.setAttribute('aria-pressed', 'true');
   musicBox.setAttribute('aria-label', 'Stop the music box');
+  musicControl.textContent = 'Music · On';
+  musicControl.setAttribute('aria-pressed', 'true');
   playMusicPhrase();
 }
 
@@ -415,6 +417,8 @@ function stopMusicBox() {
   musicBox.classList.remove('playing');
   musicBox.setAttribute('aria-pressed', 'false');
   musicBox.setAttribute('aria-label', 'Start the music box');
+  musicControl.textContent = 'Music · Off';
+  musicControl.setAttribute('aria-pressed', 'false');
   if (musicAudioContext) {
     musicAudioContext.close().catch(() => {});
     musicAudioContext = null;
@@ -502,6 +506,7 @@ lampButton.addEventListener('click', changeLamp);
 lampControl.addEventListener('click', changeLamp);
 blindButton.addEventListener('click', cycleBlinds);
 musicBox.addEventListener('click', toggleMusicBox);
+musicControl.addEventListener('click', toggleMusicBox);
 clearButton.addEventListener('click', () => {
   manualFog = renderedFogStrength <= 0.005;
   renderFog();
@@ -519,7 +524,7 @@ dockToggle.addEventListener('click', () => {
   dockToggle.setAttribute('aria-expanded', String(open));
   dockToggle.setAttribute('aria-label', open ? 'Close controls' : 'Open controls');
 });
-placeButton.addEventListener('click', () => { setWeatherPanel(false); placePanel.hidden = false; });
+
 closePlace.addEventListener('click', () => { placePanel.hidden = true; });
 placePanel.addEventListener('click', event => { if (event.target === placePanel) placePanel.hidden = true; });
 document.addEventListener('pointerdown', event => { if (!weatherPanel.hidden && !weatherPanel.contains(event.target) && !weatherToggle.contains(event.target)) setWeatherPanel(false); });
